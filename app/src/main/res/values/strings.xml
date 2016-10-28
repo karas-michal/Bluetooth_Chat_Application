@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BT Low Energy Chat</string>
+    <string name="send">Send</string>
+    <string name="action_settings">settings</string>
+    <string name="action_sync">synchronize</string>
+    <string name="your_color_connected_devices">connection information</string>
+</resources>
