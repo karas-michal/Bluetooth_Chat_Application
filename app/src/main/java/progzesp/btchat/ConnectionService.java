@@ -1,4 +1,4 @@
-package com.teamerinu.btle_test;
+package progzesp.btchat;
 
 import android.app.Service;
 import android.content.Intent;
