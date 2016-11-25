@@ -18,6 +18,8 @@ public class SocketConnection {
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
 
+
+
     public SocketConnection(BluetoothSocket bluetoothSocket) {
         this.bluetoothSocket = bluetoothSocket;
         try {
