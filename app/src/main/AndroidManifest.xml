@@ -28,6 +28,10 @@
         <service
             android:name=".communication.CommunicationService"
             android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".chat.ChatService"
+            android:enabled="true"
             android:exported="true"></service>
     </application>
 

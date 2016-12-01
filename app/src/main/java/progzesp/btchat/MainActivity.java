@@ -1,6 +1,11 @@
 package progzesp.btchat;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
 import android.view.KeyEvent;
@@ -12,8 +17,13 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+import progzesp.btchat.chat.ChatService;
+
+public class MainActivity extends AppCompatActivity implements ChatService.Callbacks {
+
+    private ChatService myService;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -26,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
+                //TODO
                 // User chose the "Settings" item, show the app settings UI...
                 return true;
 
@@ -65,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(!input.getText().toString().matches("")){
                     addMessage(input.getText().toString(),view);
+                    myService.sendMessage(input.getText().toString());
                     input.setText("");
                 }
             }
@@ -81,7 +93,33 @@ public class MainActivity extends AppCompatActivity {
                 return actionId == EditorInfo.IME_ACTION_DONE;
             }
         });
-
+        Intent serviceIntent = new Intent(MainActivity.this, ChatService.class);
+        startService(serviceIntent); //Starting the service
+        bindService(serviceIntent, mConnection,  Context.BIND_AUTO_CREATE); //Binding to the service!
+        Toast.makeText(MainActivity.this, "Button checked", Toast.LENGTH_SHORT).show();
 
     }
+    @Override
+    public void updateClient(String text) {
+        addMessage(text, (TextView) findViewById(R.id.textView));
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            Toast.makeText(MainActivity.this, "onServiceConnected called", Toast.LENGTH_SHORT).show();
+            // We've binded to LocalService, cast the IBinder and get LocalService instance
+            ChatService.LocalBinder binder = (ChatService.LocalBinder) iBinder;
+            myService = binder.getServiceInstance(); //Get instance of your service!
+            myService.registerClient(MainActivity.this); //Activity register in the service as client for callabcks!
+        }
+
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            Toast.makeText(MainActivity.this, "onServiceDisconnected called", Toast.LENGTH_SHORT).show();
+        }
+    };
+
 }
