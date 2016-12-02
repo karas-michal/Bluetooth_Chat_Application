@@ -1,7 +1,11 @@
-package progzesp.btchat.bluetooth;
+package progzesp.btchat.connection;
 
+import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothSocket;
+import android.content.Intent;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -9,7 +13,7 @@ import java.util.UUID;
 /**
  * Created by Krzysztof on 2016-11-15.
  */
-public class ConnectionProvider {
+public class ConnectionService extends Service implements DiscoverabilityProvider {
 
     private static final UUID APP_UUID = UUID.fromString("5fc104c0-0fe6-448d-8a7d-06a9f16cef94");
 
@@ -19,8 +23,16 @@ public class ConnectionProvider {
     private ConnectionServer server;
 
 
-    public ConnectionProvider(BluetoothAdapter adapter) {
+    public ConnectionService(BluetoothAdapter adapter) {
+        super();
         this.adapter = adapter;
+    }
+
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
 
@@ -28,10 +40,10 @@ public class ConnectionProvider {
         if (client != null) {
             return;
         }
-        client = new ConnectionClient(adapter, APP_UUID, new NewConnectionListener() {
+        client = new ConnectionClient(adapter, APP_UUID, this, new NewConnectionListener() {
             @Override
             public void onNewConnection(BluetoothSocket socket) {
-                client = null;
+                stopAttemptingConnections();
                 if (newConnectionListener != null) {
                     newConnectionListener.onNewConnection(socket);
                 }
@@ -53,10 +65,10 @@ public class ConnectionProvider {
             return;
         }
         try {
-            server = new ConnectionServer(adapter, APP_UUID, new NewConnectionListener() {
+            server = new ConnectionServer(adapter, APP_UUID, this, new NewConnectionListener() {
                 @Override
                 public void onNewConnection(BluetoothSocket socket) {
-                    server = null;
+                    stopAcceptingConnections();
                     if (newConnectionListener != null) {
                         newConnectionListener.onNewConnection(socket);
                     }
@@ -78,6 +90,15 @@ public class ConnectionProvider {
 
     public void setNewConnectionListener(NewConnectionListener listener) {
         newConnectionListener = listener;
+    }
+
+
+    public void ensureDiscoverability() {
+        if (adapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            startActivity(discoverableIntent);
+        }
     }
 
 }

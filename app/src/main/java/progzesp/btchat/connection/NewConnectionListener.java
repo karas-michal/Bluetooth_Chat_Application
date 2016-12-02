@@ -1,4 +1,4 @@
-package progzesp.btchat.bluetooth;
+package progzesp.btchat.connection;
 
 import android.bluetooth.BluetoothSocket;
 
