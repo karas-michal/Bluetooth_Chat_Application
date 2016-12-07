@@ -39,7 +39,7 @@ public class ConnectionClient implements Runnable {
     };
 
 
-    public ConnectionClient(BluetoothAdapter adapter, UUID uuid, Context context, NewConnectionListener connListener) {
+    public ConnectionClient(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener connListener) {
         this.adapter = adapter;
         this.uuid = uuid;
         this.context = context;

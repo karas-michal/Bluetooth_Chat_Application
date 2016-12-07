@@ -3,6 +3,8 @@ package progzesp.btchat.connection;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import java.io.IOException;
@@ -16,15 +18,16 @@ public class ConnectionServer implements Runnable {
     private static final String TAG = "ConnectionServer";
 
     private Thread thread;
+    private BluetoothAdapter adapter;
+    private Context context;
     private BluetoothServerSocket serverSocket;
     private NewConnectionListener newConnectionListener;
-    private DiscoverabilityProvider discoverabilityProvider;
 
 
-    public ConnectionServer(BluetoothAdapter adapter, UUID uuid, DiscoverabilityProvider discProvider,
-                            NewConnectionListener newConnListener) throws IOException {
+    public ConnectionServer(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener newConnListener) throws IOException {
+        this.adapter = adapter;
+        this.context = context;
         newConnectionListener = newConnListener;
-        discoverabilityProvider = discProvider;
         serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord("", uuid);
         thread = new Thread(this);
         thread.start();
@@ -46,7 +49,7 @@ public class ConnectionServer implements Runnable {
         Log.d(TAG, "Started accepting thread");
         BluetoothSocket socket;
         while (true) {
-            discoverabilityProvider.ensureDiscoverability();
+            ensureDiscoverability();
             try {
                 socket = serverSocket.accept();
             } catch (IOException e) {
@@ -58,6 +61,15 @@ public class ConnectionServer implements Runnable {
             }
         }
         Log.d(TAG, "Accepting thread ended");
+    }
+
+
+    private void ensureDiscoverability() {
+        if (adapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            context.startActivity(discoverableIntent);
+        }
     }
 
 }
