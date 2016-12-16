@@ -10,7 +10,7 @@ import android.content.IntentFilter;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by Krzysztof on 2016-11-15.
@@ -19,11 +19,13 @@ public class ConnectionClient implements Runnable {
 
     private static final String TAG = "ConnectionClient";
 
+    private Queue<BluetoothDevice> devices = new LinkedList<>();
+    private Object devicesMutex = new Object();
     private Thread thread;
     private UUID uuid;
     private Context context;
     private BluetoothAdapter adapter;
-    private BluetoothSocket socket;
+    private volatile BluetoothSocket socket;
     private NewConnectionListener newConnectionListener;
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -32,9 +34,10 @@ public class ConnectionClient implements Runnable {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 attemptConnection(device);
-            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) && socket == null) {
-                startDiscovery();
-            }
+                stopDiscovery();
+            }// else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) && socket == null) {
+            //    startDiscovery();
+            //}
         }
     };
 
@@ -46,7 +49,6 @@ public class ConnectionClient implements Runnable {
         newConnectionListener = connListener;
         thread = new Thread(this);
         startDiscovery();
-
     }
 
 
@@ -54,7 +56,9 @@ public class ConnectionClient implements Runnable {
         stopDiscovery();
         Log.d(TAG, "Terminating connection thread");
         try {
-            socket.close();
+            if (socket != null) {
+                socket.close();
+            }
         } catch (IOException e) {
             Log.e(TAG, "Error while closing socket", e);
         }
@@ -64,15 +68,14 @@ public class ConnectionClient implements Runnable {
     @Override
     public void run() {
         Log.d(TAG, "Connection thread started");
-        stopDiscovery();
         try {
             socket.connect();
             newConnectionListener.onNewConnection(socket);
-        } catch (IOException e) {
+        } catch (Exception e) {
             try {
                 Log.e(TAG, "Error while attempting to connect", e);
                 socket.close();
-            } catch (IOException e2) {
+            } catch (Exception e2) {
                 Log.e(TAG, "Error while closing socket during connection failure", e2);
             }
             socket = null;
@@ -85,8 +88,9 @@ public class ConnectionClient implements Runnable {
         try {
             socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
             thread.start();
-        } catch (IOException e) {
+        } catch (Exception e) {
             Log.e(TAG, "Error while creating socket", e);
+            startDiscovery();
         }
     }
 
@@ -104,7 +108,7 @@ public class ConnectionClient implements Runnable {
     private void stopDiscovery() {
         Log.d(TAG, "Stopping discovery");
         adapter.cancelDiscovery();
-        context.unregisterReceiver(receiver);
+        //context.unregisterReceiver(receiver);
     }
 
 }

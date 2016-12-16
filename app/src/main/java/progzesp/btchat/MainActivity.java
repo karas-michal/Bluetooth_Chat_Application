@@ -1,5 +1,9 @@
 package progzesp.btchat;
 
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -20,10 +24,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import progzesp.btchat.chat.ChatService;
+import progzesp.btchat.connection.ConnectionProvider;
+import progzesp.btchat.connection.NewConnectionListener;
 
 public class MainActivity extends AppCompatActivity implements ChatService.Callbacks {
 
     private ChatService myService;
+    private ConnectionProvider connectionProvider;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -41,6 +48,8 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
                 return true;
 
             case R.id.action_quick_sync:
+                connectionProvider.stopAttemptingConnections();
+                connectionProvider.startAcceptingConnections();
                 // User chose the "Favorite" action, mark the current item
                 // as a favorite...
                 return true;
@@ -98,7 +107,41 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         bindService(serviceIntent, mConnection,  Context.BIND_AUTO_CREATE); //Binding to the service!
         Toast.makeText(MainActivity.this, "Button checked", Toast.LENGTH_SHORT).show();
 
+        final TextView connectionView = (TextView) findViewById(R.id.textView2);
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        connectionProvider = new ConnectionProvider(this, adapter);
+        connectionProvider.setNewConnectionListener(new NewConnectionListener() {
+            @Override
+            public void onNewConnection(BluetoothSocket socket) {
+                final BluetoothDevice device = socket.getRemoteDevice();
+                runOnUiThread(new Runnable() {
+                                  @Override
+                                  public void run() {
+                                      connectionView.setText("Connected to " + device.getName());
+                                  }
+                              });
+            }
+        });
+        if (!adapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, 1);
+        } else {
+            connectionProvider.startAttemptingConnections();
+        }
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1) {
+            if (resultCode == Activity.RESULT_OK) {
+                connectionProvider.startAttemptingConnections();
+            } else {
+                Toast.makeText(this, "Bluetooth not enabled", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+    }
+
     @Override
     public void updateClient(String text) {
         addMessage(text, (TextView) findViewById(R.id.textView));
