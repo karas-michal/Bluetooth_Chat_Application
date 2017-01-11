@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Bluetooth_Chat.iml" filepath="$PROJECT_DIR$/.idea/modules/Bluetooth_Chat.iml" />
-      <module fileurl="file://$PROJECT_DIR$/Bluetooth_Chat_Programowanie_Zespolowe.iml" filepath="$PROJECT_DIR$/Bluetooth_Chat_Programowanie_Zespolowe.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Bluetooth_Chat_Programowanie_Zespolowe.iml" filepath="$PROJECT_DIR$/.idea/modules/Bluetooth_Chat_Programowanie_Zespolowe.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" />
     </modules>
   </component>
