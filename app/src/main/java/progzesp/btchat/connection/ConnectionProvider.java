@@ -29,10 +29,11 @@ public class ConnectionProvider {
     }
 
 
-    public void startAttemptingConnections() {
+    public synchronized void startAttemptingConnections() {
         if (client != null) {
             return;
         }
+        stopAcceptingConnections();
         client = new ConnectionClient(adapter, context, APP_UUID, new NewConnectionListener() {
             @Override
             public void onNewConnection(BluetoothSocket socket) {
@@ -41,11 +42,18 @@ public class ConnectionProvider {
                     newConnectionListener.onNewConnection(socket);
                 }
             }
+        }, new FinishedListener() {
+            @Override
+            public void onFinished() {
+                if (client == null) {
+                    startAttemptingConnections();
+                }
+            }
         });
     }
 
 
-    public void stopAttemptingConnections() {
+    public synchronized void stopAttemptingConnections() {
         if (client != null) {
             client.terminate();
             client = null;
@@ -53,10 +61,11 @@ public class ConnectionProvider {
     }
 
 
-    public void startAcceptingConnections() {
+    public synchronized void startAcceptingConnections() {
         if (server != null) {
             return;
         }
+        stopAttemptingConnections();
         try {
             server = new ConnectionServer(adapter, context, APP_UUID, new NewConnectionListener() {
                 @Override
@@ -66,6 +75,13 @@ public class ConnectionProvider {
                         newConnectionListener.onNewConnection(socket);
                     }
                 }
+            }, new FinishedListener() {
+                @Override
+                public void onFinished() {
+                    if (client == null) {
+                        startAttemptingConnections();
+                    }
+                }
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -73,7 +89,7 @@ public class ConnectionProvider {
     }
 
 
-    public void stopAcceptingConnections() {
+    public synchronized void stopAcceptingConnections() {
         if (server != null) {
             server.terminate();
             server = null;

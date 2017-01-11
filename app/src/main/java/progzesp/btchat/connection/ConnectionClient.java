@@ -19,33 +19,38 @@ public class ConnectionClient implements Runnable {
 
     private static final String TAG = "ConnectionClient";
 
-    private Queue<BluetoothDevice> devices = new LinkedList<>();
-    private Object devicesMutex = new Object();
+    private int lastFoundCount = 0;
+    private Set<BluetoothDevice> triedDevices = new HashSet<>();
     private Thread thread;
     private UUID uuid;
     private Context context;
     private BluetoothAdapter adapter;
     private volatile BluetoothSocket socket;
+    private FinishedListener finishedListener;
     private NewConnectionListener newConnectionListener;
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                lastFoundCount++;
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                attemptConnection(device);
-                stopDiscovery();
-            }// else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) && socket == null) {
-            //    startDiscovery();
-            //}
+                if (!triedDevices.contains(device)) {
+                    stopDiscovery();
+                    attemptConnection(device);
+                }
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) && lastFoundCount == 0) {
+                finishedListener.onFinished();
+            }
         }
     };
 
 
-    public ConnectionClient(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener connListener) {
+    public ConnectionClient(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener connListener, FinishedListener finishedListener) {
         this.adapter = adapter;
         this.uuid = uuid;
         this.context = context;
+        this.finishedListener = finishedListener;
         newConnectionListener = connListener;
         thread = new Thread(this);
         startDiscovery();
@@ -71,11 +76,12 @@ public class ConnectionClient implements Runnable {
         try {
             socket.connect();
             newConnectionListener.onNewConnection(socket);
-        } catch (Exception e) {
+        } catch (IOException e) {
             try {
                 Log.e(TAG, "Error while attempting to connect", e);
                 socket.close();
-            } catch (Exception e2) {
+                triedDevices.add(socket.getRemoteDevice());
+            } catch (IOException e2) {
                 Log.e(TAG, "Error while closing socket during connection failure", e2);
             }
             socket = null;
@@ -86,6 +92,8 @@ public class ConnectionClient implements Runnable {
 
     private void attemptConnection(BluetoothDevice device) {
         try {
+            Log.d(TAG, "Attempting connection to " + device.getName());
+            thread.join();
             socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
             thread.start();
         } catch (Exception e) {

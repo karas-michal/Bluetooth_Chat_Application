@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 /**
@@ -21,12 +23,14 @@ public class ConnectionServer implements Runnable {
     private BluetoothAdapter adapter;
     private Context context;
     private BluetoothServerSocket serverSocket;
+    private FinishedListener finishedListener;
     private NewConnectionListener newConnectionListener;
 
 
-    public ConnectionServer(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener newConnListener) throws IOException {
+    public ConnectionServer(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener newConnListener, FinishedListener finishedListener) throws IOException {
         this.adapter = adapter;
         this.context = context;
+        this.finishedListener = finishedListener;
         newConnectionListener = newConnListener;
         serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord("", uuid);
         thread = new Thread(this);
@@ -61,14 +65,21 @@ public class ConnectionServer implements Runnable {
             }
         }
         Log.d(TAG, "Accepting thread ended");
+        finishedListener.onFinished();
     }
 
 
     private void ensureDiscoverability() {
         if (adapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 60);
             context.startActivity(discoverableIntent);
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    terminate();
+                }
+            }, 60);
         }
     }
 
