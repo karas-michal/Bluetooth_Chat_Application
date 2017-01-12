@@ -64,8 +64,8 @@ public class ConnectionServer implements Runnable {
                 newConnectionListener.onNewConnection(socket);
             }
         }
-        Log.d(TAG, "Accepting thread ended");
         finishedListener.onFinished();
+        Log.d(TAG, "Accepting thread ended");
     }
 
 

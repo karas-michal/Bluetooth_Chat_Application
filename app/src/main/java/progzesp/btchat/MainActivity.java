@@ -24,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import progzesp.btchat.chat.ChatService;
+import progzesp.btchat.communication.CommunicationService;
 import progzesp.btchat.connection.ConnectionProvider;
 import progzesp.btchat.connection.NewConnectionListener;
 
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
 
     private ChatService myService;
     private ConnectionProvider connectionProvider;
+    private CommunicationService communicationService;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -48,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
                 return true;
 
             case R.id.action_quick_sync:
-                connectionProvider.stopAttemptingConnections();
                 connectionProvider.startAcceptingConnections();
                 // User chose the "Favorite" action, mark the current item
                 // as a favorite...
@@ -110,6 +111,9 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         final TextView connectionView = (TextView) findViewById(R.id.textView2);
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         connectionProvider = new ConnectionProvider(this, adapter);
+        communicationService = new CommunicationService();
+        connectionProvider.setNewConnectionListener(communicationService);
+        communicationService.setLostConnectionListener(connectionProvider);
         connectionProvider.setNewConnectionListener(new NewConnectionListener() {
             @Override
             public void onNewConnection(BluetoothSocket socket) {

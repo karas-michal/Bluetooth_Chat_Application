@@ -19,48 +19,46 @@ public class ConnectionClient implements Runnable {
 
     private static final String TAG = "ConnectionClient";
 
-    private int lastFoundCount = 0;
-    private Set<BluetoothDevice> triedDevices = new HashSet<>();
+    private Queue<BluetoothDevice> devices = new LinkedList<>();
     private Thread thread;
     private UUID uuid;
     private Context context;
     private BluetoothAdapter adapter;
-    private volatile BluetoothSocket socket;
-    private FinishedListener finishedListener;
+    private BluetoothSocket socket;
     private NewConnectionListener newConnectionListener;
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                lastFoundCount++;
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (!triedDevices.contains(device)) {
-                    stopDiscovery();
-                    attemptConnection(device);
+            synchronized (ConnectionClient.this) {
+                String action = intent.getAction();
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    synchronized (this) {
+                        devices.add(device);
+                    }
+                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                    attemptConnections();
                 }
-            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action) && lastFoundCount == 0) {
-                finishedListener.onFinished();
             }
         }
     };
 
 
-    public ConnectionClient(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener connListener, FinishedListener finishedListener) {
+    public ConnectionClient(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener connListener) {
         this.adapter = adapter;
         this.uuid = uuid;
         this.context = context;
-        this.finishedListener = finishedListener;
         newConnectionListener = connListener;
         thread = new Thread(this);
         startDiscovery();
     }
 
 
-    public void terminate() {
+    public synchronized void terminate() {
         stopDiscovery();
         Log.d(TAG, "Terminating connection thread");
         try {
+            devices.clear();
             if (socket != null) {
                 socket.close();
             }
@@ -73,33 +71,40 @@ public class ConnectionClient implements Runnable {
     @Override
     public void run() {
         Log.d(TAG, "Connection thread started");
-        try {
-            socket.connect();
-            newConnectionListener.onNewConnection(socket);
-        } catch (IOException e) {
+        BluetoothDevice device = null;
+        synchronized (this) {
+            device = devices.poll();
+        }
+        while (device != null) {
             try {
-                Log.e(TAG, "Error while attempting to connect", e);
-                socket.close();
-                triedDevices.add(socket.getRemoteDevice());
-            } catch (IOException e2) {
-                Log.e(TAG, "Error while closing socket during connection failure", e2);
+                socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
+                socket.connect();
+                newConnectionListener.onNewConnection(socket);
+                break;
+            } catch (IOException e) {
+                try {
+                    Log.e(TAG, "Error while attempting to connect to " + device.getName(), e);
+                    if (socket != null) {
+                        socket.close();
+                    }
+                } catch (IOException e2) {
+                    Log.e(TAG, "Error while closing socket during connection failure", e2);
+                }
+                synchronized (this) {
+                    device = devices.poll();
+                }
             }
-            socket = null;
+        }
+        thread = null;
+        if (device == null) {
             startDiscovery();
         }
     }
 
 
-    private void attemptConnection(BluetoothDevice device) {
-        try {
-            Log.d(TAG, "Attempting connection to " + device.getName());
-            thread.join();
-            socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
-            thread.start();
-        } catch (Exception e) {
-            Log.e(TAG, "Error while creating socket", e);
-            startDiscovery();
-        }
+    private void attemptConnections() {
+        thread = new Thread(this);
+        thread.start();
     }
 
 
