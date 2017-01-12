@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
                 return true;
 
             case R.id.action_quick_sync:
-                connectionProvider.startAcceptingConnections();
                 // User chose the "Favorite" action, mark the current item
                 // as a favorite...
                 return true;
@@ -108,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         bindService(serviceIntent, mConnection,  Context.BIND_AUTO_CREATE); //Binding to the service!
         Toast.makeText(MainActivity.this, "Button checked", Toast.LENGTH_SHORT).show();
 
+
         final TextView connectionView = (TextView) findViewById(R.id.textView2);
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         connectionProvider = new ConnectionProvider(this, adapter);
@@ -126,11 +126,25 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
                               });
             }
         });
+        final Button connectButton = (Button) findViewById(R.id.connectButton);
+        connectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectionProvider.findDevices();
+            }
+        });
+        final Button hostButton = (Button) findViewById(R.id.hostButton);
+        hostButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectionProvider.acceptConnections();
+            }
+        });
+
+
         if (!adapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, 1);
-        } else {
-            connectionProvider.startAttemptingConnections();
         }
     }
 
@@ -138,7 +152,7 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == 1) {
             if (resultCode == Activity.RESULT_OK) {
-                connectionProvider.startAttemptingConnections();
+
             } else {
                 Toast.makeText(this, "Bluetooth not enabled", Toast.LENGTH_SHORT).show();
                 finish();

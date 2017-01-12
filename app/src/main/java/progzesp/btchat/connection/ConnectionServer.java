@@ -23,18 +23,23 @@ public class ConnectionServer implements Runnable {
     private BluetoothAdapter adapter;
     private Context context;
     private BluetoothServerSocket serverSocket;
-    private FinishedListener finishedListener;
+    private FailureToConnectListener failureToConnectListener;
     private NewConnectionListener newConnectionListener;
 
 
-    public ConnectionServer(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener newConnListener, FinishedListener finishedListener) throws IOException {
+    public ConnectionServer(BluetoothAdapter adapter, Context context, UUID uuid, NewConnectionListener newConnListener, FailureToConnectListener failListener) {
         this.adapter = adapter;
         this.context = context;
-        this.finishedListener = finishedListener;
+        failureToConnectListener = failListener;
         newConnectionListener = newConnListener;
-        serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord("", uuid);
-        thread = new Thread(this);
-        thread.start();
+        try {
+            serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord("", uuid);
+            thread = new Thread(this);
+            thread.start();
+        } catch (IOException e) {
+            Log.e(TAG, "Error while creating socket", e);
+            failureToConnectListener.onFailureToConnect();
+        }
     }
 
 
@@ -62,9 +67,10 @@ public class ConnectionServer implements Runnable {
             }
             if (socket != null) {
                 newConnectionListener.onNewConnection(socket);
+            } else {
+                failureToConnectListener.onFailureToConnect();
             }
         }
-        finishedListener.onFinished();
         Log.d(TAG, "Accepting thread ended");
     }
 
@@ -79,7 +85,7 @@ public class ConnectionServer implements Runnable {
                 public void run() {
                     terminate();
                 }
-            }, 60);
+            }, 60 * 1000);
         }
     }
 
