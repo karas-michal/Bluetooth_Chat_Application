@@ -17,4 +17,16 @@ public class ChatMessage {
         this.sender = sender;
         this.time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     }
+
+    public String getText() {
+        return text;
+    }
+
+    public String getSender() {
+        return sender;
+    }
+
+    public SimpleDateFormat getTime() {
+        return time;
+    }
 }

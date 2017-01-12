@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import progzesp.btchat.ChatMessage;
+
 /**
  * Created by karas on 17.11.2016.
  */
@@ -32,20 +34,20 @@ public class SocketConnection {
         }
     }
 
-    String getTextFromStream(){
+    ChatMessage getTextFromStream(){
         byte[] buffer = new byte[256];
         try {
             int bytes = dataInputStream.read(buffer);
-            return new String(buffer, 0, bytes);
+            return new ChatMessage(new String(buffer, 0, bytes), " ");
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    int sendTextToStream(String text){
+    int sendTextToStream(ChatMessage text){
         try {
-            dataOutputStream.writeChars(text);
+            dataOutputStream.writeChars(text.getText());
             return 1;
         } catch (IOException e) {
             e.printStackTrace();

@@ -3,6 +3,7 @@ package progzesp.btchat.chat;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
@@ -10,17 +11,36 @@ import android.os.IBinder;
 import android.support.v7.app.NotificationCompat;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class ChatService extends Service {
+    OutputStream outputStream;
+    InputStream inputStream;
     NotificationManager notificationManager;
     NotificationCompat.Builder mBuilder;
+    BluetoothSocket socket;
     Callbacks activity;
     private final IBinder mBinder = new LocalBinder();
     Handler handler = new Handler();
+    byte[] buffer = new byte[1024];
+    int bytes = 0;
     Runnable serviceRunnable = new Runnable() {
         @Override
         public void run() {
-            activity.updateClient("SampleText"); //Update Activity (client) by the implementd callback
-            handler.postDelayed(this, 1000);
+            System.out.println(bytes);
+            try {
+                if (inputStream.available()>0)
+                    bytes = inputStream.read(buffer, 0, 1024 - bytes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (bytes >0 ) {
+                activity.updateClient(new String(buffer), "OUT"); //Update Activity (client) by the implementd callback
+                bytes = 0;
+            }
+            handler.postDelayed(serviceRunnable, 1000);
         }
     };
 
@@ -48,10 +68,17 @@ public class ChatService extends Service {
         this.activity = (Callbacks)activity;
     }
 
-    public void sendMessage(String text){
+    public void sendMessage(String text) throws IOException {
         //TODO
-        handler.postDelayed(serviceRunnable, 0);
+        outputStream.write(text.getBytes());
         Toast.makeText(getApplicationContext(), "msg send", Toast.LENGTH_SHORT).show();
+    }
+
+    public void setBluetoothSocket(BluetoothSocket s) throws IOException {
+        this.socket = s;
+        this.inputStream = socket.getInputStream();
+        this.outputStream = socket.getOutputStream();
+        handler.postDelayed(serviceRunnable, 0);
     }
 
     public void stopCounter(){
@@ -61,6 +88,6 @@ public class ChatService extends Service {
 
     //callbacks interface for communication with service clients!
     public interface Callbacks{
-        void updateClient(String data);
+        void updateClient(String data, String id);
     }
 }

@@ -23,6 +23,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
+
 import progzesp.btchat.chat.ChatService;
 import progzesp.btchat.communication.CommunicationService;
 import progzesp.btchat.connection.ConnectionProvider;
@@ -32,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
 
     private ChatService myService;
     private ConnectionProvider connectionProvider;
+    private boolean connected = false;
     private CommunicationService communicationService;
 
     @Override
@@ -50,8 +53,7 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
                 return true;
 
             case R.id.action_quick_sync:
-                // User chose the "Favorite" action, mark the current item
-                // as a favorite...
+                //connectionProvider.startAcceptingConnections();
                 return true;
 
             default:
@@ -62,8 +64,8 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         }
     }
 
-    private void addMessage(String s, TextView view){
-        String newLine = "You: "+s+"\n";
+    private void addMessage(String s, TextView view, String id){
+        String newLine = id+": "+s+"\n";
         view.setText(view.getText()+newLine);
         final int scrollAmount = view.getLayout().getLineTop(view.getLineCount()) - view.getHeight();
         // if there is no need to scroll, scrollAmount will be <=0
@@ -84,8 +86,14 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if(!input.getText().toString().matches("")){
-                    addMessage(input.getText().toString(),view);
-                    myService.sendMessage(input.getText().toString());
+                    addMessage(input.getText().toString(),view, "You");
+
+                    try {
+                        if (connected)
+                            myService.sendMessage(input.getText().toString());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     input.setText("");
                 }
             }
@@ -95,7 +103,8 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if ((event != null && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) || (actionId == EditorInfo.IME_ACTION_DONE)) {
                     if(!input.getText().toString().matches("")){
-                        addMessage(input.getText().toString(),view);
+                        addMessage(input.getText().toString(),view, "You");
+
                         input.setText("");
                     }
                 }
@@ -116,12 +125,18 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         communicationService.setLostConnectionListener(connectionProvider);
         connectionProvider.setNewConnectionListener(new NewConnectionListener() {
             @Override
-            public void onNewConnection(BluetoothSocket socket) {
+            public void onNewConnection(final BluetoothSocket socket) {
                 final BluetoothDevice device = socket.getRemoteDevice();
                 runOnUiThread(new Runnable() {
                                   @Override
                                   public void run() {
                                       connectionView.setText("Connected to " + device.getName());
+                                      connected = true;
+                                      try {
+                                          myService.setBluetoothSocket(socket);
+                                      } catch (IOException e) {
+                                          e.printStackTrace();
+                                      }
                                   }
                               });
             }
@@ -161,8 +176,8 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
     }
 
     @Override
-    public void updateClient(String text) {
-        addMessage(text, (TextView) findViewById(R.id.textView));
+    public void updateClient(String text, String id) {
+        addMessage(text, (TextView) findViewById(R.id.textView), id);
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
