@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Bluetooth Chat</string>
     <string name="send">Send</string>
-    <string name="action_settings">settings</string>
-    <string name="action_sync">synchronize</string>
-    <string name="your_color_connected_devices">connection information</string>
+    <string name="host">Host</string>
+    <string name="connect">Connect</string>
 </resources>

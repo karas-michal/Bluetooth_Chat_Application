@@ -47,13 +47,12 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_settings:
-                //TODO
-                // User chose the "Settings" item, show the app settings UI...
+            case R.id.connect:
+                connectionProvider.findDevices();
                 return true;
 
-            case R.id.action_quick_sync:
-                //connectionProvider.startAcceptingConnections();
+            case R.id.host:
+                connectionProvider.acceptConnections();
                 return true;
 
             default:
@@ -64,15 +63,22 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         }
     }
 
-    private void addMessage(String s, TextView view, String id){
-        String newLine = id+": "+s+"\n";
-        view.setText(view.getText()+newLine);
-        final int scrollAmount = view.getLayout().getLineTop(view.getLineCount()) - view.getHeight();
-        // if there is no need to scroll, scrollAmount will be <=0
-        if (scrollAmount > 0)
-            view.scrollTo(0, scrollAmount);
-        else
-            view.scrollTo(0, 0);
+    private void addMessage(String _string, TextView _view) {
+        final String string = _string;
+        final TextView view = _view;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                view.setText(view.getText() + string + "\n");
+                int scrollAmount = view.getLayout().getLineTop(view.getLineCount()) - view.getHeight();
+                if (scrollAmount > 0) {
+                    view.scrollTo(0, scrollAmount);
+                } else {
+                    view.scrollTo(0, 0);
+                }
+            }
+        });
+
     }
 
     @Override
@@ -83,30 +89,30 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         final EditText input = (EditText) findViewById(R.id.editText);
         final TextView view = (TextView) findViewById(R.id.textView);
         view.setMovementMethod(new ScrollingMovementMethod());
-        button.setOnClickListener(new View.OnClickListener() {
+
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        final String bluetoothName = adapter.getName();
+        final View.OnClickListener onClickListener = new View.OnClickListener() {
             public void onClick(View v) {
                 if(!input.getText().toString().matches("")){
-                    addMessage(input.getText().toString(),view, "You");
+                    String message = bluetoothName + ": " + input.getText().toString();
+                    addMessage(message, view);
 
                     try {
                         if (connected)
-                            myService.sendMessage(input.getText().toString());
+                            myService.sendMessage(message);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     input.setText("");
                 }
             }
-        });
-
+        };
+        button.setOnClickListener(onClickListener);
         input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if ((event != null && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) || (actionId == EditorInfo.IME_ACTION_DONE)) {
-                    if(!input.getText().toString().matches("")){
-                        addMessage(input.getText().toString(),view, "You");
-
-                        input.setText("");
-                    }
+                    onClickListener.onClick(button);
                 }
                 return actionId == EditorInfo.IME_ACTION_DONE;
             }
@@ -117,8 +123,6 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         Toast.makeText(MainActivity.this, "Button checked", Toast.LENGTH_SHORT).show();
 
 
-        final TextView connectionView = (TextView) findViewById(R.id.textView2);
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         connectionProvider = new ConnectionProvider(this, adapter);
         communicationService = new CommunicationService();
         connectionProvider.setNewConnectionListener(communicationService);
@@ -126,36 +130,16 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
         connectionProvider.setNewConnectionListener(new NewConnectionListener() {
             @Override
             public void onNewConnection(final BluetoothSocket socket) {
-                final BluetoothDevice device = socket.getRemoteDevice();
-                runOnUiThread(new Runnable() {
-                                  @Override
-                                  public void run() {
-                                      connectionView.setText("Connected to " + device.getName());
-                                      connected = true;
-                                      try {
-                                          myService.setBluetoothSocket(socket);
-                                      } catch (IOException e) {
-                                          e.printStackTrace();
-                                      }
-                                  }
-                              });
+                BluetoothDevice device = socket.getRemoteDevice();
+                addMessage("Connected to " + device.getName(), view);
+                connected = true;
+                try {
+                    myService.setBluetoothSocket(socket);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
-        final Button connectButton = (Button) findViewById(R.id.connectButton);
-        connectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectionProvider.findDevices();
-            }
-        });
-        final Button hostButton = (Button) findViewById(R.id.hostButton);
-        hostButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                connectionProvider.acceptConnections();
-            }
-        });
-
 
         if (!adapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -176,8 +160,8 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
     }
 
     @Override
-    public void updateClient(String text, String id) {
-        addMessage(text, (TextView) findViewById(R.id.textView), id);
+    public void updateClient(String text) {
+        addMessage(text, (TextView) findViewById(R.id.textView));
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {

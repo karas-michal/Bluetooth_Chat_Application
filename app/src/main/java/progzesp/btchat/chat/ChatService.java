@@ -37,7 +37,7 @@ public class ChatService extends Service {
                 e.printStackTrace();
             }
             if (bytes >0 ) {
-                activity.updateClient(new String(buffer), "OUT"); //Update Activity (client) by the implementd callback
+                activity.updateClient(new String(buffer)); //Update Activity (client) by the implementd callback
                 bytes = 0;
             }
             handler.postDelayed(serviceRunnable, 1000);
@@ -71,7 +71,7 @@ public class ChatService extends Service {
     public void sendMessage(String text) throws IOException {
         //TODO
         outputStream.write(text.getBytes());
-        Toast.makeText(getApplicationContext(), "msg send", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), "Message sent", Toast.LENGTH_SHORT).show();
     }
 
     public void setBluetoothSocket(BluetoothSocket s) throws IOException {
@@ -88,6 +88,6 @@ public class ChatService extends Service {
 
     //callbacks interface for communication with service clients!
     public interface Callbacks{
-        void updateClient(String data, String id);
+        void updateClient(String data);
     }
 }

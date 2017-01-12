@@ -2,15 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- "Mark Favorite", should appear as action button if possible -->
-    <item
-        android:id="@+id/action_quick_sync"
-        android:icon="@mipmap/ic_launcher"
-        android:title="@string/action_sync"
-        app:showAsAction="ifRoom"/>
 
     <!-- Settings, should always be in the overflow -->
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
-        app:showAsAction="never"/>
+    <item android:title="@string/connect" android:id="@+id/connect"/>
+    <item
+            android:title="@string/host"
+            android:id="@+id/host"/>
 
 </menu>
