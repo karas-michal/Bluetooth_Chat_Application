@@ -21,6 +21,7 @@ public class DeviceFinder {
     private Context context;
     private BluetoothAdapter adapter;
     private NewDeviceListener newDeviceListener;
+    private DiscoveryFinishedListener discoveryFinishedListener;
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -30,17 +31,18 @@ public class DeviceFinder {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     newDeviceListener.onNewDevice(device);
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-
+                    discoveryFinishedListener.onDiscoveryFinished();
                 }
             }
         }
     };
 
 
-    public DeviceFinder(BluetoothAdapter adapter, Context context, NewDeviceListener devicesListener) {
+    public DeviceFinder(BluetoothAdapter adapter, Context context, NewDeviceListener devicesListener, DiscoveryFinishedListener discFinListener) {
         this.adapter = adapter;
         this.context = context;
         newDeviceListener = devicesListener;
+        discoveryFinishedListener = discFinListener;
         startDiscovery();
     }
 

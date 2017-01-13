@@ -10,52 +10,62 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.NotificationCompat;
 import android.widget.Toast;
+import progzesp.btchat.connection.NewConnectionListener;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
+import java.util.List;
 
-public class ChatService extends Service {
-    OutputStream outputStream;
-    InputStream inputStream;
-    NotificationManager notificationManager;
-    NotificationCompat.Builder mBuilder;
-    BluetoothSocket socket;
-    Callbacks activity;
+public class ChatService extends Service implements NewConnectionListener, NewMessageListener {
+
+    NewMessageListener activity;
     private final IBinder mBinder = new LocalBinder();
     Handler handler = new Handler();
-    byte[] buffer = new byte[1024];
-    int bytes = 0;
-    Runnable serviceRunnable = new Runnable() {
-        @Override
-        public void run() {
-            System.out.println(bytes);
-            try {
-                if (inputStream.available()>0)
-                    bytes = inputStream.read(buffer, 0, 1024 - bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (bytes >0 ) {
-                activity.updateClient(new String(buffer)); //Update Activity (client) by the implementd callback
-                bytes = 0;
-            }
-            handler.postDelayed(serviceRunnable, 1000);
-        }
-    };
+    List<RemoteDevice> remoteDevices = new LinkedList<>();
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         //Do what you need in onStartCommand when service has been started
         return START_NOT_STICKY;
     }
+
 
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
+
+
+    @Override
+    public void onNewConnection(BluetoothSocket socket) {
+        for (RemoteDevice device : remoteDevices) {
+            if (device.getAddress().equals(socket.getRemoteDevice().getAddress())) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+        }
+        remoteDevices.add(new RemoteDevice(handler, socket, this));
+    }
+
+
+    @Override
+    public void onNewMessage(RemoteDevice originDevice, String message) {
+        for (RemoteDevice device : remoteDevices) {
+            if (device != originDevice) {
+                device.send(message);
+            }
+        }
+        activity.onNewMessage(originDevice, message);
+    }
+
+
     //returns the instance of the service
     public class LocalBinder extends Binder {
         public ChatService getServiceInstance(){
@@ -63,31 +73,17 @@ public class ChatService extends Service {
         }
     }
 
-    //Here Activity register to the service as Callbacks client
+
+    //Here Activity register to the service as NewMessageListener client
     public void registerClient(Activity activity){
-        this.activity = (Callbacks)activity;
-    }
-
-    public void sendMessage(String text) throws IOException {
-        //TODO
-        outputStream.write(text.getBytes());
-        Toast.makeText(getApplicationContext(), "Message sent", Toast.LENGTH_SHORT).show();
-    }
-
-    public void setBluetoothSocket(BluetoothSocket s) throws IOException {
-        this.socket = s;
-        this.inputStream = socket.getInputStream();
-        this.outputStream = socket.getOutputStream();
-        handler.postDelayed(serviceRunnable, 0);
-    }
-
-    public void stopCounter(){
-        handler.removeCallbacks(serviceRunnable);
+        this.activity = (NewMessageListener)activity;
     }
 
 
-    //callbacks interface for communication with service clients!
-    public interface Callbacks{
-        void updateClient(String data);
+    public void sendMessage(String message) throws IOException {
+        for (RemoteDevice device : remoteDevices) {
+            device.send(message);
+        }
     }
+
 }

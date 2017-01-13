@@ -26,16 +26,17 @@ import android.widget.Toast;
 import java.io.IOException;
 
 import progzesp.btchat.chat.ChatService;
+import progzesp.btchat.chat.NewMessageListener;
+import progzesp.btchat.chat.RemoteDevice;
 import progzesp.btchat.communication.CommunicationService;
 import progzesp.btchat.connection.ConnectionProvider;
 import progzesp.btchat.connection.NewConnectionListener;
 
-public class MainActivity extends AppCompatActivity implements ChatService.Callbacks {
+public class MainActivity extends AppCompatActivity implements NewMessageListener {
 
     private ChatService myService;
     private ConnectionProvider connectionProvider;
     private boolean connected = false;
-    private CommunicationService communicationService;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -124,20 +125,13 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
 
 
         connectionProvider = new ConnectionProvider(this, adapter);
-        communicationService = new CommunicationService();
-        connectionProvider.setNewConnectionListener(communicationService);
-        communicationService.setLostConnectionListener(connectionProvider);
         connectionProvider.setNewConnectionListener(new NewConnectionListener() {
             @Override
             public void onNewConnection(final BluetoothSocket socket) {
                 BluetoothDevice device = socket.getRemoteDevice();
                 addMessage("Connected to " + device.getName(), view);
                 connected = true;
-                try {
-                    myService.setBluetoothSocket(socket);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                myService.onNewConnection(socket);
             }
         });
 
@@ -160,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements ChatService.Callb
     }
 
     @Override
-    public void updateClient(String text) {
+    public void onNewMessage(RemoteDevice device, String text) {
         addMessage(text, (TextView) findViewById(R.id.textView));
     }
 

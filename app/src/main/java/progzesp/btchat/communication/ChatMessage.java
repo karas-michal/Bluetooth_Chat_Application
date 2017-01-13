@@ -1,4 +1,4 @@
-package progzesp.btchat;
+package progzesp.btchat.communication;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

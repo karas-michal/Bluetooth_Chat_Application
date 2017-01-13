@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Created by Krzysztof on 2016-11-15.
  */
-public class ConnectionProvider implements LostConnectionListener {
+public class ConnectionProvider {
 
     private static final UUID APP_UUID = UUID.fromString("5fc104c0-0fe6-448d-8a7d-06a9f16cef94");
 
@@ -25,8 +25,6 @@ public class ConnectionProvider implements LostConnectionListener {
     private ConnectionClient client;
     private ConnectionServer server;
     private DeviceFinder finder;
-    private BluetoothDevice remoteClient;
-    private BluetoothDevice remoteServer;
 
 
     public ConnectionProvider(Context context, BluetoothAdapter adapter) {
@@ -47,7 +45,6 @@ public class ConnectionProvider implements LostConnectionListener {
             public void onNewConnection(BluetoothSocket socket) {
                 client = null;
                 if (newConnectionListener != null) {
-                    remoteServer = socket.getRemoteDevice();
                     newConnectionListener.onNewConnection(socket);
                 }
             }
@@ -79,7 +76,6 @@ public class ConnectionProvider implements LostConnectionListener {
             public void onNewConnection(BluetoothSocket socket) {
             server = null;
             if (newConnectionListener != null) {
-                remoteClient = socket.getRemoteDevice();
                 newConnectionListener.onNewConnection(socket);
             }
             }
@@ -107,6 +103,13 @@ public class ConnectionProvider implements LostConnectionListener {
                     refreshDialog(device);
                 }
             }
+        }, new DiscoveryFinishedListener() {
+            @Override
+            public void onDiscoveryFinished() {
+                synchronized (ConnectionProvider.this) {
+                    dialogDevices.clear();
+                }
+            }
         });
     }
 
@@ -116,7 +119,6 @@ public class ConnectionProvider implements LostConnectionListener {
             finder.stopDiscovery();
             finder = null;
         }
-        closeDialog();
     }
 
 
@@ -133,17 +135,7 @@ public class ConnectionProvider implements LostConnectionListener {
     }
 
 
-    @Override
-    public void onLostConnection(BluetoothDevice device) {
-        if (device.equals(remoteClient)) {
-            remoteClient = null;
-            acceptConnections();
-        } else if (device.equals(remoteServer)) {
-            remoteServer = null;
-            findDevices();
-        }
-    }
-
+    // TODO: REFACTOR
 
     private AlertDialog deviceDialog;
     private List<BluetoothDevice> dialogDevices = new LinkedList<>();

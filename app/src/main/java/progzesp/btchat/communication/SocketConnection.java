@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import progzesp.btchat.ChatMessage;
-
 /**
  * Created by karas on 17.11.2016.
  */

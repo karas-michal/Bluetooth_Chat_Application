@@ -51,4 +51,6 @@ captures/
 # Keystore files
 *.jks
 
-gradle/
+# This project
+Bluetooth_Chat_Programowanie_Zespolowe.iml
+app/app.iml
