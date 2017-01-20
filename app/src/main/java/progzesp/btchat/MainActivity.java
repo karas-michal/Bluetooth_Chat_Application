@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -23,6 +24,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 
 import progzesp.btchat.chat.ChatService;
@@ -37,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
     private ChatService myService;
     private ConnectionProvider connectionProvider;
     private boolean connected = false;
+    private SharedPreferences settings;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -84,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        this.settings = getPreferences(MODE_PRIVATE);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final Button button = (Button) findViewById(R.id.button);
@@ -175,5 +180,27 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
             Toast.makeText(MainActivity.this, "onServiceDisconnected called", Toast.LENGTH_SHORT).show();
         }
     };
+
+    public void onPause(){
+        super.onPause();
+        SharedPreferences.Editor editor = this.settings.edit();
+        final TextView view = (TextView) findViewById(R.id.textView);
+        Gson gson = new Gson();
+        //TODO cale myservice jest duze jesli trzeba jakies pole to mozna getterem wyciagnac i dolozyc
+        //String json = gson.toJson(this.myService);
+        //editor.putString("ChatService", json);
+        editor.putString("ChatMessages", view.getText().toString() );
+        editor.apply();
+    }
+
+
+    public void onResume(){
+        super.onResume();
+        Gson gson = new Gson();
+        //String json = settings.getString("ChatService", "");
+        //this.myService = gson.fromJson(json, ChatService.class);
+        final TextView view = (TextView) findViewById(R.id.textView);
+        view.setText(settings.getString("ChatMessages", ""));
+    }
 
 }
