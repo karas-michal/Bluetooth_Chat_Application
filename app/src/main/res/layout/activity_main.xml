@@ -35,7 +35,8 @@
             android:background="@drawable/my_border"
             android:padding="6dp" android:layout_alignParentLeft="true"
             android:layout_toLeftOf="@+id/button"
-            android:layout_alignParentRight="true" android:layout_below="@+id/connectButton"/>
+            android:layout_alignParentRight="true" android:layout_below="@+id/connectButton"
+            android:freezesText="true"/>
 
     <Button
             style="?android:attr/buttonStyleSmall"

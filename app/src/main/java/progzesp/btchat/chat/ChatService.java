@@ -1,34 +1,30 @@
 package progzesp.btchat.chat;
 
 import android.app.Activity;
-import android.app.NotificationManager;
 import android.app.Service;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.v7.app.NotificationCompat;
-import android.widget.Toast;
 import progzesp.btchat.connection.NewConnectionListener;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ChatService extends Service implements NewConnectionListener, NewMessageListener {
+public class ChatService extends Service implements NewConnectionListener, NewMessageListener, LostConnectionListener {
 
-    NewMessageListener activity;
-    private final IBinder mBinder = new LocalBinder();
-    Handler handler = new Handler();
-    List<RemoteDevice> remoteDevices = new LinkedList<>();
+    private NewMessageListener newMessageListener;
+    private LostConnectionListener lostConnectionListener;
+    private IBinder mBinder = new LocalBinder();
+    private Handler handler = new Handler();
+    private List<RemoteDevice> remoteDevices = new LinkedList<>();
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //Do what you need in onStartCommand when service has been started
         return START_NOT_STICKY;
     }
 
@@ -41,17 +37,8 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
 
     @Override
     public void onNewConnection(BluetoothSocket socket) {
-        for (RemoteDevice device : remoteDevices) {
-            if (device.getAddress().equals(socket.getRemoteDevice().getAddress())) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return;
-            }
-        }
-        remoteDevices.add(new RemoteDevice(handler, socket, this));
+        remove(socket.getRemoteDevice());
+        remoteDevices.add(new RemoteDevice(handler, socket, this, this));
     }
 
 
@@ -62,11 +49,16 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
                 device.send(message);
             }
         }
-        activity.onNewMessage(originDevice, message);
+        newMessageListener.onNewMessage(originDevice, message);
+    }
+
+    @Override
+    public void onLostConnection(BluetoothDevice device) {
+        remove(device);
+        lostConnectionListener.onLostConnection(device);
     }
 
 
-    //returns the instance of the service
     public class LocalBinder extends Binder {
         public ChatService getServiceInstance(){
             return ChatService.this;
@@ -74,15 +66,25 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
     }
 
 
-    //Here Activity register to the service as NewMessageListener client
-    public void registerClient(Activity activity){
-        this.activity = (NewMessageListener)activity;
+    public void registerClient(Activity activity) {
+        this.newMessageListener = (NewMessageListener) activity;
+        this.lostConnectionListener = (LostConnectionListener) activity;
     }
 
 
     public void sendMessage(String message) throws IOException {
         for (RemoteDevice device : remoteDevices) {
             device.send(message);
+        }
+    }
+
+
+    private void remove(BluetoothDevice device) {
+        for (int i = 0; i < remoteDevices.size(); i++) {
+            if (remoteDevices.get(i).getAddress().equals(device.getAddress())) {
+                remoteDevices.remove(i);
+                break;
+            }
         }
     }
 

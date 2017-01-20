@@ -1,5 +1,6 @@
 package progzesp.btchat.chat;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 
@@ -12,17 +13,19 @@ import java.io.OutputStream;
  */
 public class RemoteDevice implements Runnable {
 
+    private BluetoothDevice device;
     private OutputStream outputStream;
     private InputStream inputStream;
-    private String address;
     private Handler handler;
     private NewMessageListener newMessageListener;
+    private LostConnectionListener lostConnectionListener;
 
 
-    public RemoteDevice(Handler handler, BluetoothSocket socket, NewMessageListener nmListener) {
+    public RemoteDevice(Handler handler, BluetoothSocket socket, NewMessageListener nmListener, LostConnectionListener lcListener) {
         this.handler = handler;
-        this.address = socket.getRemoteDevice().getAddress();
+        this.device = socket.getRemoteDevice();
         newMessageListener = nmListener;
+        lostConnectionListener = lcListener;
         try {
             inputStream = socket.getInputStream();
             outputStream = socket.getOutputStream();
@@ -42,6 +45,7 @@ public class RemoteDevice implements Runnable {
                 bytes = inputStream.read(buffer, 0, 1024 - bytes);
         } catch (IOException e) {
             e.printStackTrace();
+            lostConnectionListener.onLostConnection(device);
         }
         if (bytes > 0) {
             newMessageListener.onNewMessage(this, new String(buffer));
@@ -60,7 +64,7 @@ public class RemoteDevice implements Runnable {
 
 
     public String getAddress() {
-        return address;
+        return device.getAddress();
     }
 
 

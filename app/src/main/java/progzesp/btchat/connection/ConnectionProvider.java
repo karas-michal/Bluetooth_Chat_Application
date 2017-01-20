@@ -6,7 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.DialogInterface;
-import progzesp.btchat.communication.LostConnectionListener;
+import progzesp.btchat.R;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -34,7 +34,7 @@ public class ConnectionProvider {
     }
 
 
-    public void attemptConnection(BluetoothDevice device) {
+    public synchronized void attemptConnection(BluetoothDevice device) {
         if (client != null) {
             return;
         }
@@ -57,7 +57,7 @@ public class ConnectionProvider {
     }
 
 
-    public void stopAttemptingConnection() {
+    public synchronized void stopAttemptingConnection() {
         if (client != null) {
             client.terminate();
             client = null;
@@ -65,7 +65,7 @@ public class ConnectionProvider {
     }
 
 
-    public void acceptConnections() {
+    public synchronized void acceptConnections() {
         if (server != null) {
             return;
         }
@@ -88,7 +88,7 @@ public class ConnectionProvider {
     }
 
 
-    public void findDevices() {
+    public synchronized void findDevices() {
         if (finder != null) {
             return;
         }
@@ -98,7 +98,6 @@ public class ConnectionProvider {
         finder = new DeviceFinder(adapter, context, new NewDeviceListener() {
             @Override
             public void onNewDevice(BluetoothDevice device) {
-                finder = null;
                 if (client == null) {
                     refreshDialog(device);
                 }
@@ -106,6 +105,8 @@ public class ConnectionProvider {
         }, new DiscoveryFinishedListener() {
             @Override
             public void onDiscoveryFinished() {
+                finder.stopDiscovery();
+                finder = null;
                 synchronized (ConnectionProvider.this) {
                     dialogDevices.clear();
                 }
@@ -114,7 +115,7 @@ public class ConnectionProvider {
     }
 
 
-    public void stopFindingDevices() {
+    public synchronized void stopFindingDevices() {
         if (finder != null) {
             finder.stopDiscovery();
             finder = null;
@@ -122,7 +123,7 @@ public class ConnectionProvider {
     }
 
 
-    public void stopAcceptingConnections() {
+    public synchronized void stopAcceptingConnections() {
         if (server != null) {
             server.terminate();
             server = null;
@@ -130,7 +131,7 @@ public class ConnectionProvider {
     }
 
 
-    public void setNewConnectionListener(NewConnectionListener listener) {
+    public synchronized void setNewConnectionListener(NewConnectionListener listener) {
         newConnectionListener = listener;
     }
 
@@ -151,13 +152,12 @@ public class ConnectionProvider {
             deviceNames[i] = dialogDevices.get(i).getName();
         }
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context);
-        deviceDialog = dialogBuilder.setTitle("Select device").setItems(deviceNames, new DialogInterface.OnClickListener() {
+        deviceDialog = dialogBuilder.setTitle(context.getResources().getString(R.string.select_device)).setItems(deviceNames, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 BluetoothDevice device;
                 synchronized (ConnectionProvider.this) {
                     device = dialogDevices.get(which);
-                    dialogDevices.clear();
                     deviceDialog = null;
                 }
                 attemptConnection(device);

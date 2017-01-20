@@ -8,9 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * Created by Krzysztof on 2017-01-12.
  */
@@ -18,6 +15,7 @@ public class DeviceFinder {
 
     private static final String TAG = "DeviceFinder";
 
+    private boolean searching;
     private Context context;
     private BluetoothAdapter adapter;
     private NewDeviceListener newDeviceListener;
@@ -31,6 +29,8 @@ public class DeviceFinder {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     newDeviceListener.onNewDevice(device);
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                    searching = false;
+                    context.unregisterReceiver(this);
                     discoveryFinishedListener.onDiscoveryFinished();
                 }
             }
@@ -47,20 +47,26 @@ public class DeviceFinder {
     }
 
 
-    public void startDiscovery() {
-        Log.d(TAG, "Starting discovery");
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        context.registerReceiver(receiver, filter);
-        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        context.registerReceiver(receiver, filter);
-        adapter.startDiscovery();
+    public synchronized void startDiscovery() {
+        if (!searching) {
+            Log.d(TAG, "Starting discovery");
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            context.registerReceiver(receiver, filter);
+            filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+            context.registerReceiver(receiver, filter);
+            adapter.startDiscovery();
+            searching = true;
+        }
     }
 
 
-    public void stopDiscovery() {
-        Log.d(TAG, "Stopping discovery");
-        adapter.cancelDiscovery();
-        //context.unregisterReceiver(receiver);
+    public synchronized void stopDiscovery() {
+        if (searching) {
+            Log.d(TAG, "Stopping discovery");
+            adapter.cancelDiscovery();
+            context.unregisterReceiver(receiver);
+            searching = false;
+        }
     }
 
 }

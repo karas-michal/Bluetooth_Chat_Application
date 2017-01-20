@@ -1,6 +1,10 @@
 <resources>
-    <string name="app_name">Bluetooth Chat</string>
-    <string name="send">Send</string>
-    <string name="host">Host</string>
-    <string name="connect">Connect</string>
+    <string name="app_name">Chat Bluetooth</string>
+    <string name="send">Wyślij</string>
+    <string name="host">Hostuj</string>
+    <string name="connect">Połącz</string>
+    <string name="select_device">Wybierz urządzenie</string>
+    <string name="connected_to">Połączono z</string>
+    <string name="disconnected_from">Utracono połączenie z</string>
+    <string name="bluetooth_off">Bluetooth wyłączony</string>
 </resources>
