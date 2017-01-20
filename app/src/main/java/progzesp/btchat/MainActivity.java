@@ -4,10 +4,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.*;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +15,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.gson.Gson;
 import progzesp.btchat.chat.ChatService;
 import progzesp.btchat.chat.LostConnectionListener;
 import progzesp.btchat.chat.NewMessageListener;
@@ -35,6 +33,7 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
     private boolean connected = false;
     private String bluetoothName;
     private BluetoothAdapter bluetoothAdapter;
+    private SharedPreferences settings;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -86,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        this.settings = getPreferences(MODE_PRIVATE);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final Button button = (Button) findViewById(R.id.button);
@@ -175,6 +175,30 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
         public void onServiceDisconnected(ComponentName arg0) {
 
         }
+
     };
+
+
+    public void onPause(){
+        super.onPause();
+        SharedPreferences.Editor editor = this.settings.edit();
+        final TextView view = (TextView) findViewById(R.id.textView);
+        Gson gson = new Gson();
+        //TODO cale myservice jest duze jesli trzeba jakies pole to mozna getterem wyciagnac i dolozyc
+        //String json = gson.toJson(this.myService);
+        //editor.putString("ChatService", json);
+        editor.putString("ChatMessages", view.getText().toString() );
+        editor.apply();
+    }
+
+
+    public void onResume(){
+        super.onResume();
+        Gson gson = new Gson();
+        //String json = settings.getString("ChatService", "");
+        //this.myService = gson.fromJson(json, ChatService.class);
+        final TextView view = (TextView) findViewById(R.id.textView);
+        view.setText(settings.getString("ChatMessages", ""));
+    }
 
 }
