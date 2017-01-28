@@ -1,62 +1,69 @@
 package progzesp.btchat.chat;
 
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.os.Handler;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 /**
  * Created by Krzysztof on 2017-01-13.
  */
 public class RemoteDevice implements Runnable {
-
-    private BluetoothDevice device;
-    private OutputStream outputStream;
-    private InputStream inputStream;
-    private Handler handler;
+    private BluetoothSocket socket;
+    private ObjectOutputStream outputStream;
+    private ObjectInputStream inputStream;
+    private Thread thread;
     private NewMessageListener newMessageListener;
     private LostConnectionListener lostConnectionListener;
 
 
-    public RemoteDevice(Handler handler, BluetoothSocket socket, NewMessageListener nmListener, LostConnectionListener lcListener) {
-        this.handler = handler;
-        this.device = socket.getRemoteDevice();
+    public RemoteDevice(BluetoothSocket socket, NewMessageListener nmListener, LostConnectionListener lcListener) {
+        this.socket = socket;
         newMessageListener = nmListener;
         lostConnectionListener = lcListener;
         try {
-            inputStream = socket.getInputStream();
-            outputStream = socket.getOutputStream();
+            outputStream = new ObjectOutputStream(socket.getOutputStream());
+            outputStream.flush();
+            inputStream = new ObjectInputStream(socket.getInputStream());
+            thread = new Thread(this);
+            thread.start();
         } catch (IOException e) {
             e.printStackTrace();
+            lostConnectionListener.onLostConnection(socket.getRemoteDevice());
         }
-        handler.postDelayed(this, 500);
     }
 
 
     public void run() {
-        byte[] buffer = new byte[1024];
-        int bytes = 0;
-        System.out.println(bytes);
-        try {
-            if (inputStream.available() > 0)
-                bytes = inputStream.read(buffer, 0, 1024 - bytes);
-        } catch (IOException e) {
-            e.printStackTrace();
-            lostConnectionListener.onLostConnection(device);
+        while (true) {
+            try {
+                Object message = inputStream.readObject();
+                newMessageListener.onNewMessage(this, message);
+            } catch (IOException e) {
+                e.printStackTrace();
+                lostConnectionListener.onLostConnection(socket.getRemoteDevice());
+                break;
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
         }
-        if (bytes > 0) {
-            newMessageListener.onNewMessage(this, new String(buffer));
-        }
-        handler.postDelayed(this, 500);
     }
 
 
-    public void send(String message) {
+    public void disconnect() {
         try {
-            outputStream.write(message.getBytes());
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void send(Serializable message) {
+        try {
+            outputStream.writeObject(message);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -64,8 +71,7 @@ public class RemoteDevice implements Runnable {
 
 
     public String getAddress() {
-        return device.getAddress();
+        return socket.getRemoteDevice().getAddress();
     }
-
 
 }

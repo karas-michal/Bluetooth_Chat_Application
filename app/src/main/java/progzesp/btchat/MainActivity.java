@@ -15,22 +15,18 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.google.gson.Gson;
+import progzesp.btchat.chat.ChatMessage;
 import progzesp.btchat.chat.ChatService;
 import progzesp.btchat.chat.LostConnectionListener;
-import progzesp.btchat.chat.NewMessageListener;
-import progzesp.btchat.chat.RemoteDevice;
+import progzesp.btchat.chat.NewChatMessageListener;
 import progzesp.btchat.connection.ConnectionProvider;
 import progzesp.btchat.connection.NewConnectionListener;
 
-import java.io.IOException;
 
-
-public class MainActivity extends AppCompatActivity implements NewMessageListener, LostConnectionListener {
+public class MainActivity extends AppCompatActivity implements NewChatMessageListener, LostConnectionListener {
 
     private ChatService myService;
     private ConnectionProvider connectionProvider;
-    private boolean connected = false;
     private String bluetoothName;
     private BluetoothAdapter bluetoothAdapter;
     private SharedPreferences settings;
@@ -72,8 +68,8 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
 
 
     @Override
-    public void onNewMessage(RemoteDevice device, String text) {
-        addMessage(text, (TextView) findViewById(R.id.textView));
+    public void onNewChatMessage(ChatMessage message) {
+        addMessage(message.toString(), (TextView) findViewById(R.id.textView));
     }
 
 
@@ -97,15 +93,9 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
         final View.OnClickListener onClickListener = new View.OnClickListener() {
             public void onClick(View v) {
                 if(!input.getText().toString().matches("")){
-                    String message = bluetoothName + ": " + input.getText().toString();
-                    addMessage(message, view);
-
-                    try {
-                        if (connected)
-                            myService.sendMessage(message);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    ChatMessage message = new ChatMessage(bluetoothName, input.getText().toString());
+                    addMessage(message.toString(), view);
+                    myService.sendChatMessage(message);
                     input.setText("");
                 }
             }
@@ -121,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
         });
         Intent serviceIntent = new Intent(MainActivity.this, ChatService.class);
         startService(serviceIntent);
-        bindService(serviceIntent, mConnection,  Context.BIND_AUTO_CREATE);
+        bindService(serviceIntent, mConnection, Context.BIND_AUTO_CREATE);
 
 
         connectionProvider = new ConnectionProvider(this, bluetoothAdapter);
@@ -130,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
             public void onNewConnection(final BluetoothSocket socket) {
                 BluetoothDevice device = socket.getRemoteDevice();
                 addMessage(getResources().getString(R.string.connected_to) + " " + device.getName(), view);
-                connected = true;
                 myService.onNewConnection(socket);
             }
         });
@@ -181,24 +170,24 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
 
     public void onPause(){
         super.onPause();
-        SharedPreferences.Editor editor = this.settings.edit();
-        final TextView view = (TextView) findViewById(R.id.textView);
-        Gson gson = new Gson();
+        //SharedPreferences.Editor editor = this.settings.edit();
+        //final TextView view = (TextView) findViewById(R.id.textView);
+        //Gson gson = new Gson();
         //TODO cale myservice jest duze jesli trzeba jakies pole to mozna getterem wyciagnac i dolozyc
         //String json = gson.toJson(this.myService);
         //editor.putString("ChatService", json);
-        editor.putString("ChatMessages", view.getText().toString() );
-        editor.apply();
+        //editor.putString("ChatMessages", view.getText().toString() );
+        //editor.apply();
     }
 
 
     public void onResume(){
         super.onResume();
-        Gson gson = new Gson();
+        //Gson gson = new Gson();
         //String json = settings.getString("ChatService", "");
         //this.myService = gson.fromJson(json, ChatService.class);
-        final TextView view = (TextView) findViewById(R.id.textView);
-        view.setText(settings.getString("ChatMessages", ""));
+        //final TextView view = (TextView) findViewById(R.id.textView);
+        //view.setText(settings.getString("ChatMessages", ""));
     }
 
 }

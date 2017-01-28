@@ -5,6 +5,6 @@ package progzesp.btchat.chat;
  */
 public interface NewMessageListener {
 
-    void onNewMessage(RemoteDevice device, String message);
+    void onNewMessage(RemoteDevice device, Object message);
 
 }

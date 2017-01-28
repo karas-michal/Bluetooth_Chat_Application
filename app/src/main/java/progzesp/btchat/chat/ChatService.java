@@ -6,20 +6,18 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import progzesp.btchat.connection.NewConnectionListener;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ChatService extends Service implements NewConnectionListener, NewMessageListener, LostConnectionListener {
 
-    private NewMessageListener newMessageListener;
+    private NewChatMessageListener newChatMessageListener;
     private LostConnectionListener lostConnectionListener;
     private IBinder mBinder = new LocalBinder();
-    private Handler handler = new Handler();
     private List<RemoteDevice> remoteDevices = new LinkedList<>();
 
 
@@ -38,18 +36,20 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
     @Override
     public void onNewConnection(BluetoothSocket socket) {
         remove(socket.getRemoteDevice());
-        remoteDevices.add(new RemoteDevice(handler, socket, this, this));
+        remoteDevices.add(new RemoteDevice(socket, this, this));
     }
 
 
     @Override
-    public void onNewMessage(RemoteDevice originDevice, String message) {
+    public void onNewMessage(RemoteDevice originDevice, Object message) {
         for (RemoteDevice device : remoteDevices) {
             if (device != originDevice) {
-                device.send(message);
+                device.send((Serializable) message);
             }
         }
-        newMessageListener.onNewMessage(originDevice, message);
+        if (message instanceof ChatMessage) {
+            newChatMessageListener.onNewChatMessage((ChatMessage) message);
+        }
     }
 
     @Override
@@ -67,12 +67,12 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
 
 
     public void registerClient(Activity activity) {
-        this.newMessageListener = (NewMessageListener) activity;
+        this.newChatMessageListener = (NewChatMessageListener) activity;
         this.lostConnectionListener = (LostConnectionListener) activity;
     }
 
 
-    public void sendMessage(String message) throws IOException {
+    public void sendChatMessage(ChatMessage message) {
         for (RemoteDevice device : remoteDevices) {
             device.send(message);
         }
