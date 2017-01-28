@@ -42,13 +42,17 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
 
     @Override
     public void onNewMessage(RemoteDevice originDevice, Object message) {
+        ChatMessage msg = (ChatMessage) message;
         for (RemoteDevice device : remoteDevices) {
-            if (device != originDevice) {
-                device.send((Serializable) message);
+            if (device != originDevice && msg.getTtl()>0) {
+                msg.setTtl(msg.getTtl()-1);
+                device.send(msg);
             }
         }
-        if (message instanceof ChatMessage) {
-            newChatMessageListener.onNewChatMessage((ChatMessage) message);
+        if (message != null) {
+            if (msg.getTtl() == 0) {
+                newChatMessageListener.onNewChatMessage(msg);
+            }
         }
     }
 
