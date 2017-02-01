@@ -17,7 +17,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import progzesp.btchat.chat.ChatMessage;
 import progzesp.btchat.chat.ChatService;
-import progzesp.btchat.chat.GetTime;
 import progzesp.btchat.chat.LostConnectionListener;
 import progzesp.btchat.chat.NewChatMessageListener;
 import progzesp.btchat.connection.ConnectionProvider;
@@ -133,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
         final EditText input = (EditText) findViewById(R.id.editText);
         final TextView view = (TextView) findViewById(R.id.textView);
         view.setMovementMethod(new ScrollingMovementMethod());
-        timeServerMinusSystem = 0;//GetTime.getTme();
+        timeServerMinusSystem = 0;
         timeServerMinusSystem = System.currentTimeMillis()-timeServerMinusSystem;
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         final View.OnClickListener onClickListener = new View.OnClickListener() {
