@@ -9,15 +9,8 @@ public class ChatMessage implements Serializable {
     private String contents;
     private String sender;
     private int ttl;
-    private long time;
+    private int originalTtl;
     private messageType type;
-
-    public ChatMessage(long time, int ttl, String sender, String contents) {
-        this.time = time;
-        this.ttl = ttl;
-        this.sender = sender;
-        this.contents = contents;
-    }
 
     public messageType getType() {
         return type;
@@ -28,34 +21,25 @@ public class ChatMessage implements Serializable {
     }
 
     public ChatMessage(String sender, String contents) {
+        type = messageType.MESSAGE;
         this.contents = contents;
         this.sender = sender;
     }
 
-    public ChatMessage(String sender, String contents, long time, int ttl, messageType type) {
+    public ChatMessage(String sender, String contents, int ttl, messageType type) {
         this.sender = sender;
         this.contents = contents;
-        this.time = time;
         this.ttl = ttl;
+        this.originalTtl = ttl;
         this.type = type;
-    }
-
-    public long getTime() {
-        return time;
-    }
-
-    public void setTime(long time) {
-        this.time = time;
-    }
-
-    public ChatMessage(String contents, String sender, int ttl) {
-        this.contents = contents;
-        this.sender = sender;
-        this.ttl = ttl;
     }
 
     public int getTtl() {
         return ttl;
+    }
+
+    public int getOriginalTtl() {
+        return originalTtl;
     }
 
     public void setTtl(int ttl) {

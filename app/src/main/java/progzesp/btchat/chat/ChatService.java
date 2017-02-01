@@ -9,7 +9,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import progzesp.btchat.connection.NewConnectionListener;
 
-import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,16 +42,19 @@ public class ChatService extends Service implements NewConnectionListener, NewMe
     @Override
     public void onNewMessage(RemoteDevice originDevice, Object message) {
         ChatMessage msg = (ChatMessage) message;
+        if (msg == null) {
+            return;
+        }
+        if (msg.getType() != messageType.MESSAGE) {
+            msg.setTtl(msg.getTtl() - 1);
+        }
         for (RemoteDevice device : remoteDevices) {
-            if (device != originDevice && msg.getTtl()>0) {
-                msg.setTtl(msg.getTtl()-1);
+            if (device != originDevice) {
                 device.send(msg);
             }
         }
-        if (message != null) {
-            if (msg.getTtl() == 0) {
-                newChatMessageListener.onNewChatMessage(msg);
-            }
+        if (msg.getTtl() == 0) {
+            newChatMessageListener.onNewChatMessage(msg);
         }
     }
 

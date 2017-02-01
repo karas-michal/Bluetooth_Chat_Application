@@ -5,5 +5,5 @@ package progzesp.btchat.chat;
  */
 
 public enum messageType {
-    PING, ANSWER
+    PING, ANSWER, MESSAGE
 }
