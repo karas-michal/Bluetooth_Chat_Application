@@ -134,11 +134,11 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
                 Pattern ping = Pattern.compile("^\\s*ping\\s*(\\d+)\\s*(\\d+)");
                 Matcher m = ping.matcher(input.getText());
                 if (m.find()) {
-                    time = System.currentTimeMillis();
                     int ttl = Integer.parseInt(m.group(1));
                     int length = Integer.parseInt(m.group(2)) * 1024;
                     String msg = generateString(length, 's');
                     ChatMessage message = new ChatMessage(bluetoothName, msg, ttl, PING);
+                    time = System.currentTimeMillis();
                     myService.sendChatMessage(message);
                     addMessage("Rozpoczęto test. Rozmiar wiadomości: "+length/1024+" KB",view);
                     input.setText("ping ");
