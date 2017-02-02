@@ -105,11 +105,11 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
         }
         else if(message.getTtl()== 0 && message.getType() == ANSWER){
             long timeDiff = System.currentTimeMillis()-time;
-            addMessage("Odebrano odpowiedź\nCzas: "+timeDiff, (TextView) findViewById(R.id.textView));
+            addMessage("Odebrano odpowiedź. Czas: "+timeDiff+" ms", (TextView) findViewById(R.id.textView));
         }
-        else
-            addMessage("Błąd", (TextView) findViewById(R.id.textView));
-        //addMessage(message.toString(), (TextView) findViewById(R.id.textView));
+        else {
+            addMessage(message.toString(), (TextView) findViewById(R.id.textView));
+        }
     }
 
 
@@ -136,11 +136,16 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
                 if (m.find()) {
                     time = System.currentTimeMillis();
                     int ttl = Integer.parseInt(m.group(1));
-                    int length = Integer.parseInt(m.group(2));
+                    int length = Integer.parseInt(m.group(2)) * 1024;
                     String msg = generateString(length, 's');
                     ChatMessage message = new ChatMessage(bluetoothName, msg, ttl, PING);
                     myService.sendChatMessage(message);
-                    addMessage("rozpoczęto test",view);
+                    addMessage("Rozpoczęto test. Rozmiar wiadomości: "+length/1024+" KB",view);
+                    input.setText("ping ");
+                } else {
+                    ChatMessage message = new ChatMessage(bluetoothName, input.getText().toString());
+                    myService.sendChatMessage(message);
+                    addMessage(message.toString(), view);
                     input.setText("");
                 }
             }
