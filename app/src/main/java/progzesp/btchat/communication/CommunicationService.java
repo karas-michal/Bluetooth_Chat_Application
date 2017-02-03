@@ -78,9 +78,19 @@ public class CommunicationService extends Service implements NewConnectionListen
     }
 
 
-    public void send(Serializable message) {
+    public void sendToAll(Serializable message) {
         for (RemoteDevice device : remoteDevices) {
             device.send(message);
+        }
+    }
+
+
+    public void send(Serializable message, RemoteDevice targetDevice) {
+        for (RemoteDevice device : remoteDevices) {
+            if (device == targetDevice) {
+                device.send(message);
+                return;
+            }
         }
     }
 

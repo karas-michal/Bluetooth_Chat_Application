@@ -77,11 +77,11 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
         if (message instanceof PingMessage) {
             PingMessage ping = (PingMessage) message;
             if (ping.isResponse()) {
-                long timeDiff = System.currentTimeMillis()- pingTimeSent;
+                long timeDiff = System.currentTimeMillis() - pingTimeSent;
                 addMessage(getResources().getString(R.string.ping_response_received) + " " + timeDiff + " ms");
             } else {
                 PingMessage response = new PingMessage(ping.getContents(), ping.getOriginalTimeToLive(), true);
-                communicationService.send(response);
+                communicationService.send(response, originDevice);
                 addMessage(getResources().getString(R.string.ping_response_sent));
             }
         } else if (message instanceof ChatMessage) {
@@ -113,11 +113,11 @@ public class MainActivity extends AppCompatActivity implements NewMessageListene
                     int length = Integer.parseInt(m.group(2)) * 1024;
                     PingMessage message = new PingMessage(length, ttl, false);
                     pingTimeSent = System.currentTimeMillis();
-                    communicationService.send(message);
+                    communicationService.sendToAll(message);
                     addMessage(getResources().getString(R.string.ping_sent) + " " + length / 1024 + " KB");
                 } else {
                     ChatMessage message = new ChatMessage(bluetoothName, input.getText().toString());
-                    communicationService.send(message);
+                    communicationService.sendToAll(message);
                     addMessage(message.toString());
                     input.setText("");
                 }
