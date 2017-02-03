@@ -12,9 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Created by Krzysztof on 2016-11-15.
- */
+
 public class ConnectionProvider {
 
     private static final UUID APP_UUID = UUID.fromString("5fc104c0-0fe6-448d-8a7d-06a9f16cef94");

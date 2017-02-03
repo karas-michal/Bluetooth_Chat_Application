@@ -6,5 +6,8 @@
     <string name="select_device">Wybierz urządzenie</string>
     <string name="connected_to">Połączono z</string>
     <string name="disconnected_from">Utracono połączenie z</string>
-    <string name="bluetooth_off">Bluetooth wyłączony</string>
+    <string name="bluetooth_off">Bluetooth wyłączony!</string>
+    <string name="ping_sent">Rozpoczęto test. Rozmiar wiadomości:</string>
+    <string name="ping_response_sent">Wysłano odpowiedź.</string>
+    <string name="ping_response_received">Odebrano odpowiedź. Czas:</string>
 </resources>

@@ -1,32 +1,21 @@
 package progzesp.btchat.communication;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.Serializable;
 
-/**
- * Created by karas on 30.11.2016.
- */
 
-public class ChatMessage {
-    private String text;
+public class ChatMessage implements Serializable {
+
+    private String contents;
     private String sender;
-    private SimpleDateFormat time;
 
-    public ChatMessage(String text, String sender) {
-        this.text = text;
+    public ChatMessage(String sender, String contents) {
+        this.contents = contents;
         this.sender = sender;
-        this.time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     }
 
-    public String getText() {
-        return text;
+
+    public String toString() {
+        return sender + ": " + contents;
     }
 
-    public String getSender() {
-        return sender;
-    }
-
-    public SimpleDateFormat getTime() {
-        return time;
-    }
 }

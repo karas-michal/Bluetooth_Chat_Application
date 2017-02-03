@@ -1,4 +1,4 @@
-package progzesp.btchat.chat;
+package progzesp.btchat.communication;
 
 import android.bluetooth.BluetoothSocket;
 
@@ -7,9 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-/**
- * Created by Krzysztof on 2017-01-13.
- */
+
 public class RemoteDevice implements Runnable {
     private BluetoothSocket socket;
     private ObjectOutputStream outputStream;

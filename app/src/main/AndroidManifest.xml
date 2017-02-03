@@ -4,7 +4,6 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -23,7 +22,7 @@
         </activity>
 
         <service
-            android:name=".chat.ChatService"
+            android:name=".communication.CommunicationService"
             android:enabled="true"
             android:exported="true" />
     </application>

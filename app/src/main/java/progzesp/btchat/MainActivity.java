@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.*;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -15,28 +18,23 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import progzesp.btchat.chat.ChatMessage;
-import progzesp.btchat.chat.ChatService;
-import progzesp.btchat.chat.LostConnectionListener;
-import progzesp.btchat.chat.NewChatMessageListener;
+import progzesp.btchat.communication.*;
 import progzesp.btchat.connection.ConnectionProvider;
 import progzesp.btchat.connection.NewConnectionListener;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static progzesp.btchat.chat.messageType.ANSWER;
-import static progzesp.btchat.chat.messageType.PING;
 
+public class MainActivity extends AppCompatActivity implements NewMessageListener, LostConnectionListener {
 
-public class MainActivity extends AppCompatActivity implements NewChatMessageListener, LostConnectionListener {
-
-    private ChatService myService;
+    private CommunicationService communicationService;
     private ConnectionProvider connectionProvider;
     private String bluetoothName;
     private BluetoothAdapter bluetoothAdapter;
-    private SharedPreferences settings;
-    private long time;
+    private Pattern pingRegex = Pattern.compile("^\\s*ping\\s*(\\d+)\\s*(\\d+)");
+    private long pingTimeSent;
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -45,25 +43,6 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
         return true;
     }
 
-    private String generateString(int length, char c){
-        StringBuffer outputBuffer = new StringBuffer(length);
-        for (int i = 0; i < length; i++){
-            outputBuffer.append(c);
-        }
-        return outputBuffer.toString();
-    }
-
-    public static boolean isInteger(String s) {
-        try {
-            Integer.parseInt(s);
-        } catch(NumberFormatException e) {
-            return false;
-        } catch(NullPointerException e) {
-            return false;
-        }
-        // only got here if we didn't return false
-        return true;
-    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -94,34 +73,31 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
 
 
     @Override
-    public void onNewChatMessage(ChatMessage message) {
-        if (message.getTtl() == 0 && message.getType() == PING){
-            //long currTime = System.currentTimeMillis()-timeServerMinusSystem;
-            //long timeDiff = message.getTime()-currTime;
-            //addMessage("czas podróży: "+timeDiff, (TextView) findViewById(R.id.textView));
-            ChatMessage rMessage = new ChatMessage(bluetoothName, message.getContents(), message.getOriginalTtl(), ANSWER);
-            myService.sendChatMessage(rMessage);
-            addMessage("Wysłano odpowiedź", (TextView) findViewById(R.id.textView));
-        }
-        else if(message.getTtl()== 0 && message.getType() == ANSWER){
-            long timeDiff = System.currentTimeMillis()-time;
-            addMessage("Odebrano odpowiedź. Czas: "+timeDiff+" ms", (TextView) findViewById(R.id.textView));
-        }
-        else {
-            addMessage(message.toString(), (TextView) findViewById(R.id.textView));
+    public void onNewMessage(RemoteDevice originDevice, Object message) {
+        if (message instanceof PingMessage) {
+            PingMessage ping = (PingMessage) message;
+            if (ping.isResponse()) {
+                long timeDiff = System.currentTimeMillis()- pingTimeSent;
+                addMessage(getResources().getString(R.string.ping_response_received) + " " + timeDiff + " ms");
+            } else {
+                PingMessage response = new PingMessage(ping.getContents(), ping.getOriginalTimeToLive(), true);
+                communicationService.send(response);
+                addMessage(getResources().getString(R.string.ping_response_sent));
+            }
+        } else if (message instanceof ChatMessage) {
+            addMessage(message.toString());
         }
     }
 
 
     @Override
     public void onLostConnection(BluetoothDevice device) {
-        addMessage(getResources().getString(R.string.disconnected_from) + " " + device.getName(), (TextView) findViewById(R.id.textView));
+        addMessage(getResources().getString(R.string.disconnected_from) + " " + device.getName());
     }
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        this.settings = getPreferences(MODE_PRIVATE);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final Button button = (Button) findViewById(R.id.button);
@@ -131,21 +107,18 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         final View.OnClickListener onClickListener = new View.OnClickListener() {
             public void onClick(View v) {
-                Pattern ping = Pattern.compile("^\\s*ping\\s*(\\d+)\\s*(\\d+)");
-                Matcher m = ping.matcher(input.getText());
+                Matcher m = pingRegex.matcher(input.getText());
                 if (m.find()) {
                     int ttl = Integer.parseInt(m.group(1));
                     int length = Integer.parseInt(m.group(2)) * 1024;
-                    String msg = generateString(length, 's');
-                    ChatMessage message = new ChatMessage(bluetoothName, msg, ttl, PING);
-                    time = System.currentTimeMillis();
-                    myService.sendChatMessage(message);
-                    addMessage("Rozpoczęto test. Rozmiar wiadomości: "+length/1024+" KB",view);
-                    input.setText("ping ");
+                    PingMessage message = new PingMessage(length, ttl, false);
+                    pingTimeSent = System.currentTimeMillis();
+                    communicationService.send(message);
+                    addMessage(getResources().getString(R.string.ping_sent) + " " + length / 1024 + " KB");
                 } else {
                     ChatMessage message = new ChatMessage(bluetoothName, input.getText().toString());
-                    myService.sendChatMessage(message);
-                    addMessage(message.toString(), view);
+                    communicationService.send(message);
+                    addMessage(message.toString());
                     input.setText("");
                 }
             }
@@ -159,18 +132,18 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
                 return actionId == EditorInfo.IME_ACTION_DONE;
             }
         });
-        Intent serviceIntent = new Intent(MainActivity.this, ChatService.class);
+
+        Intent serviceIntent = new Intent(MainActivity.this, CommunicationService.class);
         startService(serviceIntent);
         bindService(serviceIntent, mConnection, Context.BIND_AUTO_CREATE);
-
 
         connectionProvider = new ConnectionProvider(this, bluetoothAdapter);
         connectionProvider.setNewConnectionListener(new NewConnectionListener() {
             @Override
             public void onNewConnection(final BluetoothSocket socket) {
                 BluetoothDevice device = socket.getRemoteDevice();
-                addMessage(getResources().getString(R.string.connected_to) + " " + device.getName(), view);
-                myService.onNewConnection(socket);
+                addMessage(getResources().getString(R.string.connected_to) + " " + device.getName());
+                communicationService.onNewConnection(socket);
             }
         });
 
@@ -183,9 +156,9 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
     }
 
 
-    private void addMessage(String _string, TextView _view) {
+    private void addMessage(String _string) {
         final String string = _string;
-        final TextView view = _view;
+        final TextView view = (TextView) findViewById(R.id.textView);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -204,9 +177,9 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            ChatService.LocalBinder binder = (ChatService.LocalBinder) iBinder;
-            myService = binder.getServiceInstance();
-            myService.registerClient(MainActivity.this);
+            CommunicationService.LocalBinder binder = (CommunicationService.LocalBinder) iBinder;
+            communicationService = binder.getServiceInstance();
+            communicationService.registerClient(MainActivity.this);
         }
 
 
@@ -216,28 +189,5 @@ public class MainActivity extends AppCompatActivity implements NewChatMessageLis
         }
 
     };
-
-
-    public void onPause(){
-        super.onPause();
-        //SharedPreferences.Editor editor = this.settings.edit();
-        //final TextView view = (TextView) findViewById(R.id.textView);
-        //Gson gson = new Gson();
-        //TODO cale myservice jest duze jesli trzeba jakies pole to mozna getterem wyciagnac i dolozyc
-        //String json = gson.toJson(this.myService);
-        //editor.putString("ChatService", json);
-        //editor.putString("ChatMessages", view.getText().toString() );
-        //editor.apply();
-    }
-
-
-    public void onResume(){
-        super.onResume();
-        //Gson gson = new Gson();
-        //String json = settings.getString("ChatService", "");
-        //this.myService = gson.fromJson(json, ChatService.class);
-        //final TextView view = (TextView) findViewById(R.id.textView);
-        //view.setText(settings.getString("ChatMessages", ""));
-    }
 
 }

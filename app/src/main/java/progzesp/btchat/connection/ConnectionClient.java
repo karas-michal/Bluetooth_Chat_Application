@@ -7,9 +7,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.util.UUID;
 
-/**
- * Created by Krzysztof on 2016-11-15.
- */
+
 public class ConnectionClient implements Runnable {
 
     private static final String TAG = "ConnectionClient";

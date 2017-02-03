@@ -8,9 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-/**
- * Created by Krzysztof on 2017-01-12.
- */
+
 public class DeviceFinder {
 
     private static final String TAG = "DeviceFinder";
