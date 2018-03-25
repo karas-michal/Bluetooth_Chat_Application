@@ -1,15 +1,16 @@
-package progzesp.btchat.chat;
+package progzesp.testSystem.communication;
 
 import java.io.Serializable;
 
 /**
- * Created by Krzysztof on 2017-01-28.
+ * Klasa enkapsulująca wiadomość w czacie
  */
-public class ChatMessage implements Serializable {
+public class TextMessage implements Serializable {
+
     private String contents;
     private String sender;
 
-    public ChatMessage(String sender, String contents) {
+    public TextMessage(String sender, String contents) {
         this.contents = contents;
         this.sender = sender;
     }

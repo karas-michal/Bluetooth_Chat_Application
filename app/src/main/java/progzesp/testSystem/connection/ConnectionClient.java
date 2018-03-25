@@ -1,4 +1,4 @@
-package progzesp.btchat.connection;
+package progzesp.testSystem.connection;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -7,9 +7,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.util.UUID;
 
-/**
- * Created by Krzysztof on 2016-11-15.
- */
+
 public class ConnectionClient implements Runnable {
 
     private static final String TAG = "ConnectionClient";
@@ -51,7 +49,7 @@ public class ConnectionClient implements Runnable {
         Log.d(TAG, "Connection thread started");
         try {
             socket.connect();
-            newConnectionListener.onNewConnection(socket);
+            newConnectionListener.onNewConnection(socket, 0, 1);
         } catch (IOException e) {
             try {
                 Log.e(TAG, "Error while attempting to connect to " + socket.getRemoteDevice().getName(), e);

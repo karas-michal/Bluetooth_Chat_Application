@@ -1,4 +1,4 @@
-package progzesp.btchat.connection;
+package progzesp.testSystem.connection;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -7,10 +7,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
+import android.widget.Toast;
 
-/**
- * Created by Krzysztof on 2017-01-12.
- */
+
 public class DeviceFinder {
 
     private static final String TAG = "DeviceFinder";
@@ -26,8 +25,10 @@ public class DeviceFinder {
             synchronized (DeviceFinder.this) {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    int  rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI,Short.MIN_VALUE);
+                    Toast.makeText(context, "RSSI: "+rssi, Toast.LENGTH_LONG).show();
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    newDeviceListener.onNewDevice(device);
+                    newDeviceListener.onNewDevice(device, rssi);
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                     searching = false;
                     context.unregisterReceiver(this);
@@ -54,7 +55,7 @@ public class DeviceFinder {
             context.registerReceiver(receiver, filter);
             filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
             context.registerReceiver(receiver, filter);
-            adapter.startDiscovery();
+            BluetoothAdapter.getDefaultAdapter().startDiscovery();
             searching = true;
         }
     }

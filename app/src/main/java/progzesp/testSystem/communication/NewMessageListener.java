@@ -1,8 +1,6 @@
-package progzesp.btchat.chat;
+package progzesp.testSystem.communication;
 
-/**
- * Created by Krzysztof on 2017-01-13.
- */
+
 public interface NewMessageListener {
 
     void onNewMessage(RemoteDevice device, Object message);

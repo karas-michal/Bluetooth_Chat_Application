@@ -1,4 +1,4 @@
-package progzesp.btchat.chat;
+package progzesp.testSystem.communication;
 
 import android.bluetooth.BluetoothSocket;
 
@@ -8,7 +8,9 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 /**
- * Created by Krzysztof on 2017-01-13.
+ * Klasa reprezentująca urządznie podłączone, instancja dla każdego
+ * podłączonego urządzenia działa w tle odbierając wiadomości i
+ * wysyłając za pomocą callbacków.
  */
 public class RemoteDevice implements Runnable {
     private BluetoothSocket socket;
@@ -17,9 +19,12 @@ public class RemoteDevice implements Runnable {
     private Thread thread;
     private NewMessageListener newMessageListener;
     private LostConnectionListener lostConnectionListener;
+    private int  rssi;
 
 
-    public RemoteDevice(BluetoothSocket socket, NewMessageListener nmListener, LostConnectionListener lcListener) {
+    public RemoteDevice(BluetoothSocket socket, NewMessageListener nmListener, LostConnectionListener lcListener,
+        int rssi) {
+        this.rssi = rssi;
         this.socket = socket;
         newMessageListener = nmListener;
         lostConnectionListener = lcListener;
@@ -35,7 +40,10 @@ public class RemoteDevice implements Runnable {
         }
     }
 
-
+    /**
+     * Metoda sprawdza strumień wejsciowy czy istnieje jakaś czekająca
+     * wiadomość.
+     */
     public void run() {
         while (true) {
             try {
@@ -60,7 +68,10 @@ public class RemoteDevice implements Runnable {
         }
     }
 
-
+    /**
+     * Wstawia wiadomość do strumienia wyjścia danego urządzenia.
+     * @param message wiadomość do wysłania do urządzenia
+     */
     public void send(Serializable message) {
         try {
             outputStream.writeObject(message);
@@ -69,7 +80,10 @@ public class RemoteDevice implements Runnable {
         }
     }
 
-
+    /**
+     *
+     * @return adres sprzętowy podłączonego urządzenia BT.
+     */
     public String getAddress() {
         return socket.getRemoteDevice().getAddress();
     }

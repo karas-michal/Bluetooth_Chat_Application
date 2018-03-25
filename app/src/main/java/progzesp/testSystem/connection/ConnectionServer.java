@@ -1,4 +1,4 @@
-package progzesp.btchat.connection;
+package progzesp.testSystem.connection;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
@@ -12,9 +12,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 
-/**
- * Created by Krzysztof on 2016-11-15.
- */
+
 public class ConnectionServer implements Runnable {
 
     private static final String TAG = "ConnectionServer";
@@ -66,7 +64,7 @@ public class ConnectionServer implements Runnable {
                 break;
             }
             if (socket != null) {
-                newConnectionListener.onNewConnection(socket);
+                newConnectionListener.onNewConnection(socket, 0, 0);
             } else {
                 failureToConnectListener.onFailureToConnect();
             }
@@ -78,14 +76,14 @@ public class ConnectionServer implements Runnable {
     private void ensureDiscoverability() {
         if (adapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 60);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
             context.startActivity(discoverableIntent);
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
                     terminate();
                 }
-            }, 60 * 1000);
+            }, 300 * 1000);
         }
     }
 
